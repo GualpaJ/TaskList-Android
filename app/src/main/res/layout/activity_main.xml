@@ -14,7 +14,67 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        android:paddingTop="8dp">
+
+        <!-- CARD DE FRASE MOTIVADORA-->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#5B4B63">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- TITULO-->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="DAILY INSPIRATION"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textAllCaps="true"
+                        android:textColor="#CFC6D4"/>
+
+                    <!-- NUMERO-->
+                    <TextView
+                        android:id="@+id/idPhraseTexView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="99"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:textColor="#CFC6D4"
+                        android:alpha="0.5"/>
+                </LinearLayout>
+
+                <!-- FRASE -->
+                <TextView
+                    android:id="@+id/phraseTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Simplicity is the ultimate sophistication."
+                    android:textStyle="italic"
+                    android:textSize="16sp"
+                    android:textColor="#FFFFFF"
+                    android:lineSpacingExtra="4dp"/>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
@@ -23,10 +83,10 @@
             android:textSize="16sp"
             android:text="Categorias"
             android:padding="16sp"
-            android:layout_marginTop="16sp"
             android:textAllCaps="true"
             />
 
+        <!-- RECYCLERVIEW-->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
@@ -36,6 +96,7 @@
 
     </LinearLayout>
 
+    <!-- BOTON DE NUEVA CATEGORIA-->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addCategoryFAB"
         style="?attr/floatingActionButtonStyle"

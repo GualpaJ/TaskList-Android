@@ -17,6 +17,9 @@ import com.javier.tasklist.databinding.ActivityMainBinding
 import com.javier.tasklist.databinding.DialogCreateCategoryBinding
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.javier.tasklist.data.MotivationPhrasePDAO
+import com.javier.tasklist.data.MotivationalPhrase
+import com.javier.tasklist.utils.PhraseSeeder
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,6 +37,8 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        PhraseSeeder().seedIfNeeded(this)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -79,6 +84,15 @@ class MainActivity : AppCompatActivity() {
         )
 
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
+
+        //Mostrar la frase motivadora
+        val phrasePDAO = MotivationPhrasePDAO(this)
+        val phrase = phrasePDAO.getRandom()
+
+        phrase?.let {
+            binding.phraseTextView.text = "\"${it.text}\""
+            binding.idPhraseTexView.text = it.id.toString()
+        }
 
     }
 
@@ -151,4 +165,6 @@ class MainActivity : AppCompatActivity() {
         categoryList = categoryDAO.getAll()
         adapter.updateData(categoryList)
     }
+
+
 }
