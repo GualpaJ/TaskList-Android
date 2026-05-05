@@ -8,33 +8,47 @@ import com.javier.tasklist.databinding.ItemTaskBinding
 
 class TaskAdapter(
     var items: List<Task>,
-    val onClick: (Int) -> Unit,
-    val onEdit: (Int) -> Unit,
-    val onDelete: (Int) -> Unit,
+    val onToggleDone: (Int, Boolean) -> Unit,  // Solo para el checkbox
+    val onEdit: (Int) -> Unit,                 // Para long click
 ) : RecyclerView.Adapter<TaskViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
-        val layoutInflater = LayoutInflater.from(parent.context)
-        val binding = ItemTaskBinding.inflate(layoutInflater, parent, false)
+        val inflater = LayoutInflater.from(parent.context)
+        val binding = ItemTaskBinding.inflate(inflater, parent, false)
         return TaskViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: TaskViewHolder, position: Int) {
         val task = items[position]
+
         holder.render(task)
+
+        // Click normal → marcar/desmarcar checkbox
         holder.itemView.setOnClickListener {
-            onClick(position)
-        }
-        holder.binding.doneCheckBox.setOnCheckedChangeListener { _, _ ->
-            if (holder.binding.doneCheckBox.isPressed) {
-                onClick(position)
+            val pos = holder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) {
+                val newState = !items[pos].done
+                onToggleDone(pos, newState)
             }
         }
-        holder.binding.editButton.setOnClickListener {
-            onEdit(position)
+
+        // Long click → editar
+        holder.itemView.setOnLongClickListener {
+            val pos = holder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) {
+                onEdit(pos)
+            }
+            true
         }
-        holder.binding.deleteButton.setOnClickListener {
-            onDelete(position)
+
+        holder.binding.doneCheckBox.setOnCheckedChangeListener(null)
+        holder.binding.doneCheckBox.isChecked = task.done
+
+        holder.binding.doneCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            val pos = holder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) {
+                onToggleDone(pos, isChecked)
+            }
         }
     }
 
@@ -49,8 +63,7 @@ class TaskAdapter(
 class TaskViewHolder(val binding: ItemTaskBinding) : RecyclerView.ViewHolder(binding.root) {
 
     fun render(task: Task) {
-        binding.doneCheckBox.isChecked = task.done
         binding.titleTextView.text = task.title
+        binding.doneCheckBox.isChecked = task.done
     }
-
 }

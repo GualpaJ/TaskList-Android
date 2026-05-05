@@ -5,14 +5,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.javier.tasklist.R
 import com.javier.tasklist.adapters.TaskAdapter
-import com.javier.tasklist.data.Category
-import com.javier.tasklist.data.CategoryDAO
-import com.javier.tasklist.data.Task
-import com.javier.tasklist.data.TaskDAO
+import com.javier.tasklist.data.*
 import com.javier.tasklist.databinding.ActivityTaskListBinding
+import com.javier.tasklist.databinding.DialogCreateTaskBinding
 
 class TaskListActivity : AppCompatActivity() {
 
@@ -37,7 +37,7 @@ class TaskListActivity : AppCompatActivity() {
         binding = ActivityTaskListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -49,56 +49,99 @@ class TaskListActivity : AppCompatActivity() {
         val categoryId = intent.getIntExtra(EXTRA_CATEGORY_ID, -1)
         category = categoryDAO.getById(categoryId)
 
-        // Crear tarea de prueba
-        /*val task1 = Task(-1, "Comprar azulejos", false, category!!)
-        val task2 = Task(-1, "Comprar cemento", false, category!!)
-        val task3 = Task(-1, "Comprar clavos", false, category!!)
-        taskDAO.insert(task1)
-        taskDAO.insert(task2)
-        taskDAO.insert(task3)*/
-        // Fin codigo para pruebas
-
         category?.let {
             taskList = taskDAO.getAllByCategory(it)
         }
 
-        adapter = TaskAdapter(taskList, ::showTask, ::editTask, ::deleteTask)
+        adapter = TaskAdapter(
+            taskList,
+            { pos, isChecked -> toggleTaskDone(pos, isChecked) },
+            { pos -> editTask(pos) }
+        )
+
         binding.recyclerView.adapter = adapter
+
+        binding.addTaskFAB.setOnClickListener {
+            showTaskDialog(Task(-1, "", false, category!!))
+        }
+
+        // SWIPE DELETE
+        val itemTouchHelper = ItemTouchHelper(
+            object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+
+                override fun onMove(
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    target: RecyclerView.ViewHolder
+                ): Boolean = false
+
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    val pos = viewHolder.bindingAdapterPosition
+                    if (pos != RecyclerView.NO_POSITION) {
+                        deleteTask(pos)
+                    }
+                }
+            }
+        )
+
+        itemTouchHelper.attachToRecyclerView(binding.recyclerView)
     }
 
-    fun showTask(position: Int) {
+    // 🔥 FIX: SIN notifyItemChanged (evita crash)
+    fun toggleTaskDone(position: Int, isChecked: Boolean) {
         val task = taskList[position]
-
-        task.done = !task.done
+        task.done = isChecked
         taskDAO.update(task)
 
-        taskList = taskDAO.getAllByCategory(category!!)
-        adapter.updateData(taskList)
+        adapter.notifyItemChanged(position)
     }
+
 
     fun editTask(position: Int) {
         val task = taskList[position]
-
+        showTaskDialog(task)
     }
 
     fun deleteTask(position: Int) {
         val task = taskList[position]
 
-        val dialog = MaterialAlertDialogBuilder(this)
+        MaterialAlertDialogBuilder(this)
             .setIcon(R.drawable.ic_delete)
             .setTitle("Borrar tarea")
-            .setMessage("¿Está usted seguro de querer borrar la tarea \"${task.title}\"?")
-            .setPositiveButton("Si") { dialog, which ->
+            .setMessage("¿Seguro que quieres borrar \"${task.title}\"?")
+            .setPositiveButton("Sí") { _, _ ->
                 taskDAO.delete(task)
-                taskList = taskDAO.getAllByCategory(category!!)
-                adapter.updateData(taskList)
+                refreshList()
             }
-            .setNegativeButton("Cancelar") { dialog, which ->
-
+            .setNegativeButton("Cancelar") { _, _ ->
+                refreshList()
             }
-            //.setCancelable(false)
-            .create()
+            .show()
+    }
 
-        dialog.show()
+    private fun refreshList() {
+        category?.let {
+            taskList = taskDAO.getAllByCategory(it)
+            adapter.updateData(taskList)
+        }
+    }
+
+    fun showTaskDialog(task: Task) {
+        val dialogBinding = DialogCreateTaskBinding.inflate(layoutInflater)
+        val isEditing = task.id != -1
+
+        dialogBinding.textField.editText!!.setText(task.title)
+
+        MaterialAlertDialogBuilder(this)
+            .setIcon(R.drawable.ic_category)
+            .setTitle(if (isEditing) "Editar tarea" else "Crear tarea")
+            .setView(dialogBinding.root)
+            .setPositiveButton("Guardar") { _, _ ->
+                task.title = dialogBinding.textField.editText!!.text.toString()
+                taskDAO.save(task)
+                refreshList()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 }
