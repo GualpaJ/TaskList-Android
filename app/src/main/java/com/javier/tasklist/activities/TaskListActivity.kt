@@ -93,7 +93,11 @@ class TaskListActivity : AppCompatActivity() {
         task.done = isChecked
         taskDAO.update(task)
 
-        adapter.notifyItemChanged(position)
+        //adapter.notifyItemChanged(position)-- esto crashea
+        binding.recyclerView.post {
+            adapter.notifyItemChanged(position)
+        }
+
     }
 
 
