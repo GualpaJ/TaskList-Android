@@ -1,10 +1,7 @@
 package com.javier.tasklist.activities
 
 import android.content.Intent
-import android.graphics.Canvas
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -14,23 +11,21 @@ import com.javier.tasklist.R
 import com.javier.tasklist.adapters.CategoryAdapter
 import com.javier.tasklist.data.Category
 import com.javier.tasklist.data.CategoryDAO
+import com.javier.tasklist.data.TaskDAO  // ← IMPORTAR TaskDAO
 import com.javier.tasklist.databinding.ActivityMainBinding
 import com.javier.tasklist.databinding.DialogCreateCategoryBinding
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.javier.tasklist.data.MotivationPhrasePDAO
-import com.javier.tasklist.data.MotivationalPhrase
 import com.javier.tasklist.utils.PhraseSeeder
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityMainBinding
-
     lateinit var adapter: CategoryAdapter
-
     var categoryList: List<Category> = emptyList()
-
     lateinit var categoryDAO: CategoryDAO
+    lateinit var taskDAO: TaskDAO
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,10 +43,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         categoryDAO = CategoryDAO(this)
+        taskDAO = TaskDAO(this)
 
         categoryList = categoryDAO.getAll()
+        val taskCounts = taskDAO.getTaskCountForAllCategories()
 
-        adapter = CategoryAdapter(categoryList, ::showCategory, ::editCategory, ::deleteCategory)
+        adapter = CategoryAdapter(
+            items = categoryList,
+            taskCounts = taskCounts,
+            onClick = ::showCategory,
+            onEdit = ::editCategory,
+            onDelete = ::deleteCategory
+        )
 
         binding.recyclerView.adapter = adapter
 
@@ -59,13 +62,12 @@ class MainActivity : AppCompatActivity() {
             showCategoryDialog(Category(-1, ""))
         }
 
-        //Swipe para eliminar
+        // Swipe para eliminar
         val itemTouchHelper = ItemTouchHelper(
             object : ItemTouchHelper.SimpleCallback(
                 0,
                 ItemTouchHelper.LEFT
             ) {
-
                 override fun onMove(
                     recyclerView: RecyclerView,
                     viewHolder: RecyclerView.ViewHolder,
@@ -74,27 +76,24 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                     val position = viewHolder.bindingAdapterPosition
-
                     if (position != RecyclerView.NO_POSITION) {
                         deleteCategory(position)
                     }
                 }
-
-
             }
         )
 
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
 
-        //Mostrar la frase motivadora
+        // Mostrar la frase motivadora
         val phrasePDAO = MotivationPhrasePDAO(this)
         val phrase = phrasePDAO.getRandom()
+        val totalTasks = taskDAO.getTotalTaskCount()
 
         phrase?.let {
             binding.phraseTextView.text = "\"${it.text}\""
-            binding.idPhraseTexView.text = it.id.toString()
+            binding.idPhraseTexView.text = totalTasks.toString()
         }
-
     }
 
     fun showCategoryDialog(category: Category) {
@@ -109,7 +108,7 @@ class MainActivity : AppCompatActivity() {
             title = "Editar categoría"
             icon = R.drawable.ic_edit
         } else {
-            title = "Crear categoría"
+            title = "Nueva categoría"
             icon = R.drawable.ic_add
         }
 
@@ -123,13 +122,11 @@ class MainActivity : AppCompatActivity() {
                 val name = dialogBinding.textField.editText!!.text.toString()
                 category.name = name
                 categoryDAO.save(category)
-                categoryList = categoryDAO.getAll()
-                adapter.updateData(categoryList)
+                refreshList()
             }
             .setNegativeButton("Cancelar") { dialog, which ->
-
+                // Cancelar, no hacer nada
             }
-            //.setCancelable(false)
             .create()
 
         dialog.show()
@@ -137,7 +134,6 @@ class MainActivity : AppCompatActivity() {
 
     fun showCategory(position: Int) {
         val category = categoryList[position]
-        //Toast.makeText(this, category.name, Toast.LENGTH_SHORT).show() --- esto es para mensaje tipo alert
         val intent = Intent(this, TaskListActivity::class.java)
         intent.putExtra(TaskListActivity.EXTRA_CATEGORY_ID, category.id)
         startActivity(intent)
@@ -167,8 +163,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshList() {
         categoryList = categoryDAO.getAll()
-        adapter.updateData(categoryList)
+        val taskCounts = taskDAO.getTaskCountForAllCategories()
+        adapter.updateData(categoryList, taskCounts)
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshList()
+        refreshTotalTasks()
+    }
 
+    private fun refreshTotalTasks() {
+        val totalTasks = taskDAO.getTotalTaskCount()
+        binding.idPhraseTexView.text = totalTasks.toString()
+    }
 }

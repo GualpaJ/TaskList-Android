@@ -8,7 +8,7 @@
         android:id="@+id/textField"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Name">
+        android:hint="Nombre de la tarea">
 
         <com.google.android.material.textfield.TextInputEditText
             android:layout_width="match_parent"

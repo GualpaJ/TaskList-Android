@@ -49,6 +49,8 @@ class TaskListActivity : AppCompatActivity() {
         val categoryId = intent.getIntExtra(EXTRA_CATEGORY_ID, -1)
         category = categoryDAO.getById(categoryId)
 
+        updateTaskCount()
+
         category?.let {
             taskList = taskDAO.getAllByCategory(it)
         }
@@ -87,7 +89,7 @@ class TaskListActivity : AppCompatActivity() {
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
     }
 
-    // 🔥 FIX: SIN notifyItemChanged (evita crash)
+
     fun toggleTaskDone(position: Int, isChecked: Boolean) {
         val task = taskList[position]
         task.done = isChecked
@@ -127,6 +129,7 @@ class TaskListActivity : AppCompatActivity() {
         category?.let {
             taskList = taskDAO.getAllByCategory(it)
             adapter.updateData(taskList)
+            updateTaskCount()
         }
     }
 
@@ -138,7 +141,7 @@ class TaskListActivity : AppCompatActivity() {
 
         MaterialAlertDialogBuilder(this)
             .setIcon(R.drawable.ic_category)
-            .setTitle(if (isEditing) "Editar tarea" else "Crear tarea")
+            .setTitle(if (isEditing) "Editar tarea" else "Nueva tarea")
             .setView(dialogBinding.root)
             .setPositiveButton("Guardar") { _, _ ->
                 task.title = dialogBinding.textField.editText!!.text.toString()
@@ -147,5 +150,12 @@ class TaskListActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun updateTaskCount() {
+        category?.let {
+            val count = taskDAO.getTaskCountForThisCategory(it.id)
+            binding.taskCountTextView.text = count.toString()
+        }
     }
 }

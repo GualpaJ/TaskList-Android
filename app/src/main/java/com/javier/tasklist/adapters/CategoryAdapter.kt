@@ -8,6 +8,7 @@ import com.javier.tasklist.databinding.ItemCategoryBinding
 
 class CategoryAdapter(
     var items: List<Category>,
+    var taskCounts: Map<Int, Int>,
     val onClick: (Int) -> Unit,
     val onEdit: (Int) -> Unit,
     val onDelete: (Int) -> Unit,
@@ -21,8 +22,9 @@ class CategoryAdapter(
 
     override fun onBindViewHolder(holder: CategoryViewHolder, position: Int) {
         val category = items[position]
+        val taskCount = taskCounts[category.id] ?: 0
 
-        holder.render(category)
+        holder.render(category, taskCount)
 
         holder.itemView.setOnClickListener {
             onClick(position)
@@ -40,12 +42,22 @@ class CategoryAdapter(
         items = dataSet
         notifyDataSetChanged()
     }
+
+    fun updateData(dataSet: List<Category>, newTaskCounts: Map<Int, Int>) {
+        items = dataSet
+        taskCounts = newTaskCounts
+        notifyDataSetChanged()
+    }
 }
 
 class CategoryViewHolder(val binding: ItemCategoryBinding) : RecyclerView.ViewHolder(binding.root) {
 
-    fun render(category: Category) {
+    fun render(category: Category, taskCount: Int) {
         binding.titleTextView.text = category.name
+
+        // muestra el número de tareas
+        val tasksText = if (taskCount == 1) "$taskCount Tarea" else "$taskCount Tareas"
+        binding.subtitleText.text = tasksText
     }
 
 }

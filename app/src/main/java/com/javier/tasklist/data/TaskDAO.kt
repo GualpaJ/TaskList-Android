@@ -205,4 +205,73 @@ class TaskDAO(val context: Context) {
 
         return resultList
     }
+
+    fun getTaskCountForAllCategories(): Map<Int, Int> {
+        open()
+        val countMap = mutableMapOf<Int, Int>()
+
+        try {
+            val cursor = db.rawQuery(
+                "SELECT ${Task.COLUMN_CATEGORY_ID}, COUNT(*) as taskCount FROM ${Task.TABLE_NAME} GROUP BY ${Task.COLUMN_CATEGORY_ID}",
+                null
+            )
+
+            while (cursor.moveToNext()) {
+                val categoryId = cursor.getInt(0)
+                val count = cursor.getInt(1)
+                countMap[categoryId] = count
+            }
+            cursor.close()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            close()
+        }
+
+        return countMap
+    }
+
+    fun getTaskCountForThisCategory(categoryId: Int): Int {
+        open()
+        var count = 0
+
+        try {
+            val cursor = db.rawQuery(
+                "SELECT COUNT(*) FROM ${Task.TABLE_NAME} WHERE ${Task.COLUMN_CATEGORY_ID} = ?",
+                arrayOf(categoryId.toString())
+            )
+
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0)
+            }
+            cursor.close()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            close()
+        }
+
+        return count
+    }
+
+    fun getTotalTaskCount(): Int {
+        open()
+        var count = 0
+
+        try {
+            val cursor = db.rawQuery("SELECT COUNT(*) FROM ${Task.TABLE_NAME}", null)
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0)
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            close()
+        }
+
+        return count
+    }
 }
